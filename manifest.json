@@ -1,0 +1,22 @@
+{
+  "name": "Vehicle Care",
+  "short_name": "VehicleCare",
+  "description": "Jejak servis dan reminder kenderaan",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F5F3FB",
+  "theme_color": "#8B7BC7",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

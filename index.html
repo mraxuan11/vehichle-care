@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Vehicle Care</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#8B7BC7">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{
+  --bg:#F5F3FB;
+  --card:#FFFFFF;
+  --purple:#8B7BC7;
+  --purple-dark:#6B5CA5;
+  --purple-light:#E5E0F7;
+  --accent:#C9BFE8;
+  --ink:#2E2A45;
+  --muted:#8B87A0;
+  --good:#6FBF8B;
+  --warn:#E8A94C;
+  --bad:#E06B6B;
+  --radius:18px;
+  --shadow:0 4px 20px rgba(107,92,165,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  background:linear-gradient(180deg,#F5F3FB 0%,#EEEAFA 100%);
+  color:var(--ink);
+  min-height:100vh;
+  padding-bottom:90px;
+}
+header{
+  padding:24px 20px 18px;
+  background:linear-gradient(135deg,var(--purple) 0%,var(--purple-dark) 100%);
+  color:#fff;
+  border-radius:0 0 28px 28px;
+  box-shadow:var(--shadow);
+  position:relative;
+  overflow:hidden;
+}
+header::after{
+  content:"";
+  position:absolute;
+  right:-30px;top:-30px;
+  width:140px;height:140px;
+  background:rgba(255,255,255,0.08);
+  border-radius:50%;
+}
+header h1{font-size:22px;font-weight:700;letter-spacing:-0.3px;}
+header p{font-size:13px;opacity:0.85;margin-top:4px;}
+
+.container{padding:18px 16px;max-width:520px;margin:0 auto;}
+
+.summary-row{display:flex;gap:10px;margin-bottom:18px;}
+.summary-card{
+  flex:1;background:var(--card);border-radius:var(--radius);
+  padding:14px;box-shadow:var(--shadow);text-align:center;
+}
+.summary-card .num{font-size:22px;font-weight:800;color:var(--purple-dark);}
+.summary-card .lbl{font-size:11px;color:var(--muted);margin-top:2px;}
+
+.section-title{
+  font-size:14px;font-weight:700;color:var(--purple-dark);
+  margin:20px 0 10px;display:flex;align-items:center;justify-content:space-between;
+}
+.section-title span.count{
+  font-size:11px;background:var(--purple-light);color:var(--purple-dark);
+  padding:3px 9px;border-radius:20px;font-weight:600;
+}
+
+.vehicle-card{
+  background:var(--card);border-radius:var(--radius);
+  padding:16px;margin-bottom:14px;box-shadow:var(--shadow);
+  cursor:pointer;transition:transform .15s;
+}
+.vehicle-card:active{transform:scale(0.98);}
+.vehicle-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.vehicle-name{font-size:16px;font-weight:700;}
+.vehicle-plate{
+  font-size:11px;font-weight:700;color:var(--purple-dark);
+  background:var(--purple-light);padding:3px 10px;border-radius:8px;
+  letter-spacing:0.5px;
+}
+.vehicle-meta{font-size:12px;color:var(--muted);margin-top:6px;}
+.status-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;
+  margin-top:10px;
+}
+.status-ok{background:#E4F5EA;color:var(--good);}
+.status-warn{background:#FDF1E0;color:var(--warn);}
+.status-bad{background:#FBE7E7;color:var(--bad);}
+.status-dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
+
+.empty-state{
+  text-align:center;padding:40px 20px;color:var(--muted);
+}
+.empty-state .icon{font-size:40px;margin-bottom:10px;}
+.empty-state p{font-size:13px;}
+
+.fab{
+  position:fixed;bottom:24px;right:20px;
+  width:58px;height:58px;border-radius:50%;
+  background:linear-gradient(135deg,var(--purple) 0%,var(--purple-dark) 100%);
+  color:#fff;border:none;font-size:28px;
+  box-shadow:0 6px 18px rgba(107,92,165,0.4);
+  display:flex;align-items:center;justify-content:center;
+  z-index:50;
+}
+
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(46,42,69,0.5);
+  display:none;align-items:flex-end;justify-content:center;z-index:100;
+  backdrop-filter:blur(2px);
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:#fff;border-radius:24px 24px 0 0;
+  width:100%;max-width:520px;max-height:88vh;overflow-y:auto;
+  padding:22px 20px 30px;
+  animation:slideUp .25s ease;
+}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.modal-handle{
+  width:40px;height:4px;background:#E0DCF0;border-radius:4px;
+  margin:0 auto 16px;
+}
+.modal h2{font-size:18px;margin-bottom:16px;color:var(--purple-dark);}
+
+.field{margin-bottom:14px;}
+.field label{
+  display:block;font-size:12px;font-weight:600;color:var(--muted);
+  margin-bottom:6px;
+}
+.field input,.field select,.field textarea{
+  width:100%;padding:12px 14px;border:1.5px solid #E5E0F7;
+  border-radius:12px;font-size:14px;background:#FAF9FE;
+  color:var(--ink);font-family:inherit;
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;border-color:var(--purple);
+}
+.field-row{display:flex;gap:10px;}
+.field-row .field{flex:1;}
+
+.btn{
+  width:100%;padding:14px;border:none;border-radius:14px;
+  font-size:15px;font-weight:700;cursor:pointer;margin-top:6px;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--purple) 0%,var(--purple-dark) 100%);
+  color:#fff;
+}
+.btn-secondary{
+  background:var(--purple-light);color:var(--purple-dark);
+}
+.btn-danger{
+  background:#FBE7E7;color:var(--bad);
+}
+.btn-row{display:flex;gap:10px;margin-top:16px;}
+.btn-row .btn{margin-top:0;}
+
+.detail-header{
+  display:flex;align-items:center;gap:10px;margin-bottom:16px;
+}
+.back-btn{
+  width:34px;height:34px;border-radius:10px;background:var(--purple-light);
+  border:none;color:var(--purple-dark);font-size:16px;display:flex;
+  align-items:center;justify-content:center;
+}
+
+.history-item{
+  background:#FAF9FE;border-radius:14px;padding:12px 14px;margin-bottom:10px;
+  border-left:3px solid var(--purple);
+}
+.history-top{display:flex;justify-content:space-between;font-size:13px;font-weight:700;}
+.history-meta{font-size:11.5px;color:var(--muted);margin-top:3px;}
+.history-cost{font-size:12px;color:var(--purple-dark);font-weight:700;margin-top:4px;}
+.history-note{font-size:12px;color:var(--ink);margin-top:5px;opacity:0.8;}
+.history-actions{display:flex;gap:8px;margin-top:8px;}
+.history-actions button{
+  font-size:11px;padding:5px 10px;border-radius:8px;border:none;
+  background:#fff;color:var(--muted);font-weight:600;
+}
+
+.hidden{display:none;}
+.reminder-box{
+  background:var(--purple-light);border-radius:14px;padding:12px 14px;margin-bottom:16px;
+}
+.reminder-box .r-title{font-size:12px;font-weight:700;color:var(--purple-dark);margin-bottom:6px;}
+.reminder-box .r-item{font-size:12.5px;color:var(--ink);display:flex;justify-content:space-between;padding:3px 0;}
+
+.checklist-item{
+  background:#FAF9FE;border-radius:12px;padding:10px 12px;margin-bottom:8px;
+  display:flex;align-items:center;gap:10px;
+}
+.checklist-item .ci-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.ci-ok{background:var(--good);}
+.ci-warn{background:var(--warn);}
+.ci-bad{background:var(--bad);}
+.checklist-item .ci-body{flex:1;min-width:0;}
+.checklist-item .ci-name{font-size:12.5px;font-weight:700;}
+.checklist-item .ci-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.checklist-actions-row{display:flex;gap:8px;margin-top:4px;margin-bottom:16px;}
+.checklist-actions-row .btn{margin-top:0;font-size:12px;padding:10px 6px;width:auto;flex:1;}
+.checklist-empty{font-size:12px;color:var(--muted);text-align:center;padding:14px 0;}
+
+.checkbox-list{
+  max-height:180px;overflow-y:auto;border:1.5px solid #E5E0F7;border-radius:12px;padding:6px;
+}
+.checkbox-row{
+  display:flex;align-items:center;gap:8px;padding:8px 8px;font-size:12.5px;border-radius:8px;
+}
+.checkbox-row:active{background:var(--purple-light);}
+.checkbox-row input{width:16px;height:16px;accent-color:var(--purple);flex-shrink:0;}
+.checkbox-row label{flex:1;}
+.checkbox-row .cb-sub{font-size:10.5px;color:var(--muted);}
+
+.odo-card{
+  background:linear-gradient(135deg,var(--purple) 0%,var(--purple-dark) 100%);
+  border-radius:16px;padding:16px 18px;margin-bottom:16px;
+  display:flex;align-items:center;justify-content:space-between;
+  color:#fff;box-shadow:var(--shadow);cursor:pointer;
+}
+.odo-lbl{font-size:11px;opacity:0.85;}
+.odo-val{font-size:24px;font-weight:800;letter-spacing:-0.3px;margin-top:2px;}
+.odo-edit{
+  font-size:11.5px;font-weight:700;background:rgba(255,255,255,0.18);
+  padding:8px 12px;border-radius:10px;
+}
+
+.ri-row{
+  display:flex;gap:10px;margin-bottom:16px;cursor:pointer;
+}
+.ri-item{
+  flex:1;background:#FAF9FE;border:1.5px solid #E5E0F7;border-radius:14px;
+  padding:12px 14px;
+}
+.ri-lbl{font-size:11px;color:var(--muted);font-weight:600;}
+.ri-val{font-size:13.5px;font-weight:700;margin-top:4px;color:var(--ink);}
+.ri-val.ri-ok{color:var(--good);}
+.ri-val.ri-warn{color:var(--warn);}
+.ri-val.ri-bad{color:var(--bad);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚗 Vehicle Care</h1>
+  <p>Jejak servis & reminder kenderaan anda</p>
+</header>
+
+<div class="container" id="mainView">
+  <div class="summary-row">
+    <div class="summary-card"><div class="num" id="sumVehicles">0</div><div class="lbl">Kenderaan</div></div>
+    <div class="summary-card"><div class="num" id="sumDue">0</div><div class="lbl">Perlu Servis</div></div>
+    <div class="summary-card"><div class="num" id="sumTotal">RM0</div><div class="lbl">Jumlah Kos</div></div>
+  </div>
+
+  <div class="section-title">Senarai Kenderaan <span class="count" id="vCount">0</span></div>
+  <div id="vehicleList"></div>
+</div>
+
+<div class="container hidden" id="detailView">
+  <div class="detail-header">
+    <button class="back-btn" onclick="showMain()">←</button>
+    <div>
+      <div class="vehicle-name" id="dName"></div>
+      <div class="vehicle-plate" id="dPlate"></div>
+    </div>
+  </div>
+
+  <div class="reminder-box" id="reminderBox"></div>
+
+  <div class="odo-card" id="odoCard" onclick="openOdoModal()">
+    <div>
+      <div class="odo-lbl">Odometer Semasa</div>
+      <div class="odo-val" id="odoVal">0 km</div>
+    </div>
+    <div class="odo-edit">✏️ Kemaskini</div>
+  </div>
+
+  <div class="ri-row" id="riRow" onclick="openRIModal()">
+    <div class="ri-item">
+      <div class="ri-lbl">🪪 Roadtax</div>
+      <div class="ri-val" id="riRoadtaxVal">-</div>
+    </div>
+    <div class="ri-item">
+      <div class="ri-lbl">🛡️ Insurans</div>
+      <div class="ri-val" id="riInsuranceVal">-</div>
+    </div>
+  </div>
+
+  <div class="section-title">Jadual Penyelenggaraan <span class="count" id="cCount">0</span></div>
+  <div id="checklistList"></div>
+  <div class="checklist-actions-row" id="checklistActions"></div>
+
+  <div class="section-title">Sejarah Servis <span class="count" id="hCount">0</span></div>
+  <div id="historyList"></div>
+
+  <button class="btn btn-primary" onclick="openServiceModal()">+ Tambah Rekod Servis</button>
+  <button class="btn btn-danger" onclick="deleteVehicle()">Padam Kenderaan</button>
+</div>
+
+<button class="fab" onclick="openVehicleModal()">+</button>
+
+<!-- Modal: Add Vehicle -->
+<div class="modal-overlay" id="vehicleModalOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Tambah Kenderaan</h2>
+    <div class="field">
+      <label>Nama Kenderaan (cth: Myvi Ayah)</label>
+      <input type="text" id="vName" placeholder="Myvi 2019">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>No. Plat</label>
+        <input type="text" id="vPlate" placeholder="ABC1234">
+      </div>
+      <div class="field">
+        <label>Mileage Semasa (km)</label>
+        <input type="number" id="vMileage" placeholder="45000">
+      </div>
+    </div>
+    <div class="field">
+      <label>Interval Servis (km) - default 10000</label>
+      <input type="number" id="vInterval" placeholder="10000" value="10000">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Luput Roadtax</label>
+        <input type="date" id="vRoadtax">
+      </div>
+      <div class="field">
+        <label>Luput Insurans</label>
+        <input type="date" id="vInsurance">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('vehicleModalOverlay')">Batal</button>
+      <button class="btn btn-primary" onclick="saveVehicle()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add Service Record -->
+<div class="modal-overlay" id="serviceModalOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Rekod Servis Baru</h2>
+    <div class="field-row">
+      <div class="field">
+        <label>Tarikh</label>
+        <input type="date" id="sDate">
+      </div>
+      <div class="field">
+        <label>Mileage (km)</label>
+        <input type="number" id="sMileage" placeholder="45000">
+      </div>
+    </div>
+    <div class="field">
+      <label>Jenis Servis</label>
+      <select id="sType" onchange="toggleOilField()">
+        <option>Servis Berkala (Enjin/Minyak)</option>
+        <option>Tukar Tayar</option>
+        <option>Brake Pad / Brek</option>
+        <option>Battery</option>
+        <option>Aircond</option>
+        <option>Alignment/Balancing</option>
+        <option>Road Tax / Insurance</option>
+        <option>Lain-lain</option>
+      </select>
+    </div>
+    <div class="field" id="oilTypeField">
+      <label>Jenis Minyak</label>
+      <input type="text" id="sOilType" placeholder="cth: 5W-30 Fully Synthetic">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Kos (RM)</label>
+        <input type="number" id="sCost" placeholder="150">
+      </div>
+      <div class="field">
+        <label>Bengkel</label>
+        <input type="text" id="sWorkshop" placeholder="Nama bengkel">
+      </div>
+    </div>
+    <div class="field">
+      <label>Nota</label>
+      <textarea id="sNote" rows="2" placeholder="Catatan tambahan..."></textarea>
+    </div>
+    <div class="field" id="checklistTagField">
+      <label>Komponen yang diservis (tandakan)</label>
+      <div class="checkbox-list" id="checklistCheckboxes"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('serviceModalOverlay')">Batal</button>
+      <button class="btn btn-primary" onclick="saveService()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Quick Update Odometer -->
+<div class="modal-overlay" id="odoModalOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Kemaskini Odometer</h2>
+    <div class="field">
+      <label>Odometer Semasa (km)</label>
+      <input type="number" id="oNewMileage" placeholder="45000">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('odoModalOverlay')">Batal</button>
+      <button class="btn btn-primary" onclick="saveOdo()">Kemaskini</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Roadtax & Insurance -->
+<div class="modal-overlay" id="riModalOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Roadtax & Insurans</h2>
+    <div class="field">
+      <label>Luput Roadtax</label>
+      <input type="date" id="riRoadtax">
+    </div>
+    <div class="field">
+      <label>Luput Insurans</label>
+      <input type="date" id="riInsurance">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeModal('riModalOverlay')">Batal</button>
+      <button class="btn btn-primary" onclick="saveRI()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let db = JSON.parse(localStorage.getItem('servisKenderaanDB') || '{"vehicles":[]}');
+let currentVehicleId = null;
+
+// Jadual penyelenggaraan piawai (motosikal) - berdasarkan manual servis berkala
+const TEMPLATE_MOTOSIKAL = [
+  {name:"Penapis udara (elemen)", action:"Bersih", intervalKm:1000, intervalMonth:1, note:"Tukar (kertas) 6000km / (span) 12000km"},
+  {name:"Penapis udara", action:"Bersih", intervalKm:3000, intervalMonth:3, note:""},
+  {name:"Penapis minyak (screen)", action:"Bersih", intervalKm:6000, intervalMonth:6, note:""},
+  {name:"Penapis pam minyak", action:"Tukar", intervalKm:10000, intervalMonth:null, note:""},
+  {name:"Minyak enjin", action:"Tukar", intervalKm:5000, intervalMonth:null, note:"Semak setiap 1000km"},
+  {name:"Tekanan tayar", action:"Semak", intervalKm:1000, intervalMonth:1, note:""},
+  {name:"Bateri", action:"Semak", intervalKm:1000, intervalMonth:1, note:""},
+  {name:"Sistem penyejuk (radiator)", action:"Semak", intervalKm:10000, intervalMonth:null, note:""},
+  {name:"Paras coolant", action:"Semak", intervalKm:10000, intervalMonth:null, note:""},
+  {name:"Coolant, hos & o-ring", action:"Tukar", intervalKm:null, intervalMonth:36, note:"Setiap 3 tahun"},
+  {name:"Palam pencucuh (spark plug)", action:"Semak", intervalKm:3000, intervalMonth:3, note:"Tukar setiap 12000km"},
+  {name:"Karburetor (idle)", action:"Semak", intervalKm:6000, intervalMonth:6, note:""},
+  {name:"Galas stereng & handle", action:"Semak", intervalKm:3000, intervalMonth:3, note:""},
+  {name:"Kebocoran transmisi", action:"Semak", intervalKm:1000, intervalMonth:1, note:""},
+  {name:"Kebocoran crankcase", action:"Semak", intervalKm:1000, intervalMonth:1, note:""},
+  {name:"Minyak transmisi", action:"Tukar", intervalKm:5000, intervalMonth:5, note:""},
+  {name:"Tali sawat/roller pemacu", action:"Semak", intervalKm:6000, intervalMonth:6, note:"Tukar setiap 12000km"},
+  {name:"Suis & talian tangki minyak", action:"Semak", intervalKm:3000, intervalMonth:3, note:""},
+  {name:"Injap throttle & kabel", action:"Semak", intervalKm:1000, intervalMonth:1, note:""},
+  {name:"Bolt & nat enjin", action:"Semak", intervalKm:3000, intervalMonth:3, note:""},
+  {name:"Kepala silinder, silinder & piston", action:"Semak", intervalKm:6000, intervalMonth:6, note:""},
+  {name:"Sistem ekzos/pembersihan karbon", action:"Semak", intervalKm:6000, intervalMonth:6, note:""},
+  {name:"Rantai cam/masa pencucuhan", action:"Semak", intervalKm:3000, intervalMonth:3, note:""},
+  {name:"Jarak injap (valve clearance)", action:"Semak", intervalKm:6000, intervalMonth:6, note:""},
+  {name:"Penyerap hentakan (shock absorber)", action:"Semak", intervalKm:6000, intervalMonth:6, note:""},
+  {name:"Rod tegangan shock", action:"Semak", intervalKm:10000, intervalMonth:null, note:"Tukar setiap 30000km"},
+  {name:"Suspensi depan/belakang", action:"Semak", intervalKm:6000, intervalMonth:6, note:""},
+  {name:"Penyangga utama/sisi", action:"Semak+Lincir", intervalKm:6000, intervalMonth:6, note:""},
+  {name:"Sistem PCV crankcase", action:"Semak", intervalKm:3000, intervalMonth:3, note:""},
+  {name:"Mekanisme brek/pad brek", action:"Semak", intervalKm:1000, intervalMonth:1, note:""},
+  {name:"Bolt/nat setiap komponen", action:"Semak", intervalKm:1000, intervalMonth:1, note:""}
+];
+
+// Jadual penyelenggaraan kereta - berdasarkan manual Perodua Alza 2018 (Schedule NORMAL driving)
+const TEMPLATE_KERETA = [
+  {name:"Penapis udara (elemen)", action:"Semak", intervalKm:5000, intervalMonth:3, note:"Tukar setiap 40,000km/24 bulan"},
+  {name:"Minyak enjin", action:"Tukar", intervalKm:5000, intervalMonth:3, note:"Guna API SJ atau lebih tinggi. Servis pertama disyorkan pada 1,000km"},
+  {name:"Gasket plag pembuangan enjin", action:"Tukar", intervalKm:5000, intervalMonth:3, note:""},
+  {name:"Penapis minyak enjin", action:"Tukar", intervalKm:5000, intervalMonth:3, note:""},
+  {name:"Sistem penyejuk (fan motor)", action:"Semak", intervalKm:40000, intervalMonth:24, note:""},
+  {name:"Talian & sambungan minyak petrol", action:"Semak", intervalKm:40000, intervalMonth:24, note:""},
+  {name:"Coolant (Long Life Coolant)", action:"Tukar", intervalKm:80000, intervalMonth:null, note:"Tukar pertama pada 160,000km, seterusnya setiap 80,000km"},
+  {name:"Tali sawat pemacu (alternator/pam air/aircond)", action:"Semak", intervalKm:10000, intervalMonth:6, note:""},
+  {name:"Palam pencucuh (spark plug)", action:"Semak", intervalKm:10000, intervalMonth:6, note:"Tukar setiap 20,000km/12 bulan"},
+  {name:"Bateri", action:"Semak", intervalKm:5000, intervalMonth:3, note:""},
+  {name:"Charcoal canister", action:"Semak", intervalKm:40000, intervalMonth:24, note:""},
+  {name:"Tudung tangki & sambungan talian minyak", action:"Semak", intervalKm:40000, intervalMonth:24, note:""},
+  {name:"Penapis minyak petrol (fuel filter)", action:"Tukar", intervalKm:null, intervalMonth:72, note:"Setiap 6 tahun"},
+  {name:"Hos wap petrol (evaporative emission)", action:"Tukar", intervalKm:null, intervalMonth:96, note:"Setiap 8 tahun"},
+  {name:"Paip ekzos & mounting muffler", action:"Semak", intervalKm:20000, intervalMonth:12, note:""},
+  {name:"Klac (clutch)", action:"Semak", intervalKm:5000, intervalMonth:3, note:""},
+  {name:"Minyak transmisi manual (GL-3/4)", action:"Semak+Tukar", intervalKm:40000, intervalMonth:24, note:""},
+  {name:"Gasket plag pembuangan (MT)", action:"Tukar", intervalKm:40000, intervalMonth:24, note:""},
+  {name:"Minyak transmisi auto (ATF D3-SP)", action:"Semak+Tukar", intervalKm:40000, intervalMonth:24, note:""},
+  {name:"Gasket plag pembuangan (AT)", action:"Tukar", intervalKm:40000, intervalMonth:24, note:""},
+  {name:"Hos pemanas ATF", action:"Semak", intervalKm:40000, intervalMonth:24, note:""},
+  {name:"Boot aci pemacu (drive shaft)", action:"Semak", intervalKm:10000, intervalMonth:6, note:""},
+  {name:"Lengan suspensi, dust boot, spring, stabilizer", action:"Semak", intervalKm:20000, intervalMonth:12, note:""},
+  {name:"Sistem stereng (linkage/gear box/dust boot)", action:"Semak", intervalKm:20000, intervalMonth:12, note:""},
+  {name:"Alignment roda (toe-in)", action:"Semak", intervalKm:40000, intervalMonth:24, note:""},
+  {name:"Hos minyak stereng kuasa", action:"Tukar", intervalKm:null, intervalMonth:48, note:"Setiap 4 tahun"},
+  {name:"Minyak stereng kuasa", action:"Semak", intervalKm:5000, intervalMonth:3, note:""},
+  {name:"Pedal brek & brek tangan", action:"Semak", intervalKm:5000, intervalMonth:3, note:""},
+  {name:"Cakera & pad brek", action:"Semak", intervalKm:20000, intervalMonth:12, note:""},
+  {name:"Hos/tiub brek & injap P&B", action:"Semak", intervalKm:20000, intervalMonth:12, note:""},
+  {name:"Minyak brek", action:"Semak", intervalKm:5000, intervalMonth:3, note:"Tukar setiap 40,000km/24 bulan"},
+  {name:"Tromol & lapik brek", action:"Semak", intervalKm:20000, intervalMonth:12, note:""},
+  {name:"Master & wheel cylinder", action:"Semak", intervalKm:40000, intervalMonth:24, note:""},
+  {name:"Nat hab roda & bolt/nat lain", action:"Semak", intervalKm:30000, intervalMonth:18, note:""},
+  {name:"Tayar & tekanan angin", action:"Semak", intervalKm:5000, intervalMonth:3, note:""},
+  {name:"Lampu, hon, wiper & pencuci cermin", action:"Semak", intervalKm:5000, intervalMonth:3, note:""}
+];
+
+function save(){ localStorage.setItem('servisKenderaanDB', JSON.stringify(db)); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function fmtDate(d){ if(!d) return '-'; const dt=new Date(d); return dt.toLocaleDateString('ms-MY',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtMoney(n){ return 'RM'+Number(n||0).toLocaleString('en-MY',{minimumFractionDigits:0}); }
+
+function getVehicleStatus(v){
+  if(!v.history || v.history.length===0) return {level:'warn', text:'Belum ada rekod servis'};
+  const last = v.history[0];
+  const nextMileage = last.mileage + (v.interval||10000);
+  const kmLeft = nextMileage - (v.currentMileage||last.mileage);
+  if(kmLeft <= 0) return {level:'bad', text:'Servis tertunggak! ('+Math.abs(kmLeft).toLocaleString()+' km lepas)'};
+  if(kmLeft <= 1000) return {level:'warn', text:'Servis akan tiba dalam '+kmLeft.toLocaleString()+' km'};
+  return {level:'ok', text:'Servis seterusnya dalam '+kmLeft.toLocaleString()+' km'};
+}
+
+function render(){
+  const list = document.getElementById('vehicleList');
+  document.getElementById('sumVehicles').textContent = db.vehicles.length;
+  document.getElementById('vCount').textContent = db.vehicles.length;
+
+  let dueCount = 0, totalCost = 0;
+  db.vehicles.forEach(v=>{
+    const st = getVehicleStatus(v);
+    if(st.level!=='ok') dueCount++;
+    (v.history||[]).forEach(h=> totalCost += Number(h.cost||0));
+  });
+  document.getElementById('sumDue').textContent = dueCount;
+  document.getElementById('sumTotal').textContent = fmtMoney(totalCost);
+
+  if(db.vehicles.length===0){
+    list.innerHTML = '<div class="empty-state"><div class="icon">🚙</div><p>Belum ada kenderaan.<br>Tekan + untuk tambah kenderaan pertama anda.</p></div>';
+    return;
+  }
+
+  list.innerHTML = db.vehicles.map(v=>{
+    const st = getVehicleStatus(v);
+    return `<div class="vehicle-card" onclick="openDetail('${v.id}')">
+      <div class="vehicle-top">
+        <div class="vehicle-name">${v.name}</div>
+        <div class="vehicle-plate">${v.plate||'-'}</div>
+      </div>
+      <div class="vehicle-meta">Mileage semasa: ${Number(v.currentMileage||0).toLocaleString()} km</div>
+      <div class="status-pill status-${st.level}"><span class="status-dot"></span>${st.text}</div>
+    </div>`;
+  }).join('');
+}
+
+function showMain(){
+  document.getElementById('mainView').classList.remove('hidden');
+  document.getElementById('detailView').classList.add('hidden');
+  currentVehicleId = null;
+  render();
+}
+
+function openDetail(id){
+  currentVehicleId = id;
+  const v = db.vehicles.find(x=>x.id===id);
+  if(!v) return;
+  document.getElementById('mainView').classList.add('hidden');
+  document.getElementById('detailView').classList.remove('hidden');
+  document.getElementById('dName').textContent = v.name;
+  document.getElementById('dPlate').textContent = v.plate||'-';
+  document.getElementById('odoVal').textContent = Number(v.currentMileage||0).toLocaleString()+' km';
+  renderRI(v);
+
+  const urgent = getUrgentItems(v, 4);
+  let reminderHtml = `<div class="r-title">Perlu Perhatian</div>`;
+  const riAlerts = [];
+  const rtSt = getDateExpiryStatus(v.roadtaxExpiry);
+  const insSt = getDateExpiryStatus(v.insuranceExpiry);
+  if(rtSt.level!=='ok' && v.roadtaxExpiry) riAlerts.push({label:'🪪 Roadtax', st:rtSt});
+  if(insSt.level!=='ok' && v.insuranceExpiry) riAlerts.push({label:'🛡️ Insurans', st:insSt});
+  riAlerts.forEach(a=>{
+    reminderHtml += `<div class="r-item"><span>${a.st.level==='bad'?'⚠️':'🔶'} ${a.label}</span><b>${a.st.text}</b></div>`;
+  });
+  if(urgent.length>0){
+    reminderHtml += urgent.map(({item,st})=>
+      `<div class="r-item"><span>${st.level==='bad'?'⚠️':'🔶'} ${item.name}</span><b>${st.text}</b></div>`
+    ).join('');
+  } else if((v.checklist||[]).length>0 && riAlerts.length===0){
+    reminderHtml += `<div class="r-item"><span>✅ Semua komponen dalam jadual</span></div>`;
+  } else if((v.checklist||[]).length===0 && riAlerts.length===0){
+    const gst = getVehicleStatus(v);
+    reminderHtml += `<div class="r-item"><span>${gst.text}</span></div>`;
+  }
+  document.getElementById('reminderBox').innerHTML = reminderHtml;
+
+  renderChecklist(v);
+
+  const hist = v.history||[];
+  document.getElementById('hCount').textContent = hist.length;
+  const hl = document.getElementById('historyList');
+  if(hist.length===0){
+    hl.innerHTML = '<div class="empty-state"><div class="icon">🔧</div><p>Belum ada rekod servis.</p></div>';
+  } else {
+    hl.innerHTML = hist.map(h=>`
+      <div class="history-item">
+        <div class="history-top"><span>${h.type}</span><span>${fmtDate(h.date)}</span></div>
+        <div class="history-meta">${Number(h.mileage).toLocaleString()} km ${h.workshop?'• '+h.workshop:''}</div>
+        <div class="history-cost">${fmtMoney(h.cost)}</div>
+        ${h.oilType?`<div class="history-meta">🛢️ ${h.oilType}</div>`:''}
+        ${h.note?`<div class="history-note">${h.note}</div>`:''}
+        <div class="history-actions"><button onclick="deleteHistory('${h.id}')">Padam</button></div>
+      </div>
+    `).join('');
+  }
+}
+
+function monthsBetween(d1,d2){
+  return (d2.getFullYear()-d1.getFullYear())*12 + (d2.getMonth()-d1.getMonth()) + (d2.getDate()-d1.getDate())/30;
+}
+
+function getItemStatus(item, v){
+  if((item.lastKm===null||item.lastKm===undefined) && !item.lastDate){
+    return {level:'warn', text:'Belum ada rekod', urgency:0};
+  }
+  let kmLeft = null, daysLeft = null;
+  if(item.intervalKm && item.lastKm!==null && item.lastKm!==undefined){
+    kmLeft = (item.lastKm + item.intervalKm) - (v.currentMileage||0);
+  }
+  if(item.intervalMonth && item.lastDate){
+    const due = new Date(item.lastDate);
+    due.setMonth(due.getMonth() + item.intervalMonth);
+    daysLeft = Math.round((due - new Date())/86400000);
+  }
+  // fraction of interval remaining, pick the more urgent (smaller fraction)
+  let kmFrac = kmLeft!==null ? kmLeft/item.intervalKm : Infinity;
+  let dayFrac = daysLeft!==null ? daysLeft/(item.intervalMonth*30) : Infinity;
+  const frac = Math.min(kmFrac, dayFrac);
+  const urgency = frac; // lower = more urgent
+
+  let level, text;
+  const parts = [];
+  if(kmLeft!==null) parts.push(kmLeft<=0 ? `Tertunggak ${Math.abs(kmLeft).toLocaleString()}km` : `${kmLeft.toLocaleString()}km lagi`);
+  if(daysLeft!==null) parts.push(daysLeft<=0 ? `Tertunggak ${Math.abs(daysLeft)}hari` : `${daysLeft}hari lagi`);
+  text = parts.join(' • ') || '-';
+
+  if(frac<=0) level='bad';
+  else if(frac<=0.1) level='warn';
+  else level='ok';
+
+  return {level, text, urgency};
+}
+
+function loadTemplate(type){
+  const v = db.vehicles.find(x=>x.id===currentVehicleId);
+  if(!v) return;
+  if(v.checklist && v.checklist.length>0){
+    if(!confirm('Jadual sedia ada akan ditimpa. Teruskan?')) return;
+  }
+  const src = type==='kereta' ? TEMPLATE_KERETA : TEMPLATE_MOTOSIKAL;
+  v.checklist = src.map(t=>({
+    id: uid(), name:t.name, action:t.action, intervalKm:t.intervalKm,
+    intervalMonth:t.intervalMonth, note:t.note, lastKm:null, lastDate:null
+  }));
+  save();
+  openDetail(currentVehicleId);
+}
+
+function renderChecklist(v){
+  const list = document.getElementById('checklistList');
+  const cActions = document.getElementById('checklistActions');
+  const checklist = v.checklist || [];
+  document.getElementById('cCount').textContent = checklist.length;
+
+  cActions.innerHTML = `
+    <button class="btn btn-secondary" onclick="loadTemplate('motosikal')">🏍️ ${checklist.length?'Muat Semula':'Muat'} Motosikal</button>
+    <button class="btn btn-secondary" onclick="loadTemplate('kereta')">🚗 ${checklist.length?'Muat Semula':'Muat'} Kereta</button>
+  `;
+
+  if(checklist.length===0){
+    list.innerHTML = '<div class="checklist-empty">Belum ada jadual penyelenggaraan. Muat templat motosikal atau tambah manual.</div>';
+    return;
+  }
+
+  const withStatus = checklist.map(item=>({item, st:getItemStatus(item, v)}));
+  withStatus.sort((a,b)=> a.st.urgency - b.st.urgency);
+
+  list.innerHTML = withStatus.map(({item,st})=>{
+    const lastInfo = item.lastKm!==null && item.lastKm!==undefined
+      ? `Terakhir: ${item.lastKm.toLocaleString()}km${item.lastDate?' • '+fmtDate(item.lastDate):''}`
+      : 'Belum direkod';
+    return `<div class="checklist-item">
+      <div class="ci-dot ci-${st.level}"></div>
+      <div class="ci-body">
+        <div class="ci-name">${item.name} <span style="font-weight:400;color:var(--muted)">(${item.action})</span></div>
+        <div class="ci-sub">${st.text} • ${lastInfo}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getUrgentItems(v, limit=3){
+  const checklist = v.checklist || [];
+  return checklist.map(item=>({item, st:getItemStatus(item,v)}))
+    .filter(x=>x.st.level!=='ok')
+    .sort((a,b)=>a.st.urgency-b.st.urgency)
+    .slice(0,limit);
+}
+
+function openOdoModal(){
+  const v = db.vehicles.find(x=>x.id===currentVehicleId);
+  document.getElementById('oNewMileage').value = v?v.currentMileage:'';
+  document.getElementById('odoModalOverlay').classList.add('open');
+}
+
+function saveOdo(){
+  const v = db.vehicles.find(x=>x.id===currentVehicleId);
+  if(!v) return;
+  const val = Number(document.getElementById('oNewMileage').value);
+  if(!val || val<0){ alert('Sila isi odometer yang sah'); return; }
+  if(val < v.currentMileage && !confirm('Odometer baru lebih rendah dari sebelumnya. Teruskan?')) return;
+  v.currentMileage = val;
+  save();
+  closeModal('odoModalOverlay');
+  openDetail(currentVehicleId);
+}
+
+function getDateExpiryStatus(dateStr){
+  if(!dateStr) return {level:'warn', text:'Belum ditetapkan'};
+  const daysLeft = Math.round((new Date(dateStr) - new Date())/86400000);
+  if(daysLeft<=0) return {level:'bad', text:`Luput ${Math.abs(daysLeft)}hari lalu`, daysLeft};
+  if(daysLeft<=30) return {level:'warn', text:`${daysLeft}hari lagi`, daysLeft};
+  return {level:'ok', text:fmtDate(dateStr), daysLeft};
+}
+
+function renderRI(v){
+  const rt = getDateExpiryStatus(v.roadtaxExpiry);
+  const ins = getDateExpiryStatus(v.insuranceExpiry);
+  const rtEl = document.getElementById('riRoadtaxVal');
+  const insEl = document.getElementById('riInsuranceVal');
+  rtEl.textContent = rt.text;
+  rtEl.className = 'ri-val ri-'+rt.level;
+  insEl.textContent = ins.text;
+  insEl.className = 'ri-val ri-'+ins.level;
+}
+
+function openRIModal(){
+  const v = db.vehicles.find(x=>x.id===currentVehicleId);
+  document.getElementById('riRoadtax').value = v.roadtaxExpiry||'';
+  document.getElementById('riInsurance').value = v.insuranceExpiry||'';
+  document.getElementById('riModalOverlay').classList.add('open');
+}
+
+function saveRI(){
+  const v = db.vehicles.find(x=>x.id===currentVehicleId);
+  if(!v) return;
+  v.roadtaxExpiry = document.getElementById('riRoadtax').value || null;
+  v.insuranceExpiry = document.getElementById('riInsurance').value || null;
+  save();
+  closeModal('riModalOverlay');
+  openDetail(currentVehicleId);
+}
+
+function openVehicleModal(){
+  document.getElementById('vName').value='';
+  document.getElementById('vPlate').value='';
+  document.getElementById('vMileage').value='';
+  document.getElementById('vInterval').value='10000';
+  document.getElementById('vRoadtax').value='';
+  document.getElementById('vInsurance').value='';
+  document.getElementById('vehicleModalOverlay').classList.add('open');
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+function saveVehicle(){
+  const name = document.getElementById('vName').value.trim();
+  if(!name){ alert('Sila isi nama kenderaan'); return; }
+  db.vehicles.push({
+    id: uid(),
+    name,
+    plate: document.getElementById('vPlate').value.trim(),
+    currentMileage: Number(document.getElementById('vMileage').value)||0,
+    interval: Number(document.getElementById('vInterval').value)||10000,
+    roadtaxExpiry: document.getElementById('vRoadtax').value || null,
+    insuranceExpiry: document.getElementById('vInsurance').value || null,
+    history: [],
+    checklist: []
+  });
+  save();
+  closeModal('vehicleModalOverlay');
+  render();
+}
+
+function deleteVehicle(){
+  if(!confirm('Padam kenderaan ini beserta semua rekod servis?')) return;
+  db.vehicles = db.vehicles.filter(v=>v.id!==currentVehicleId);
+  save();
+  showMain();
+}
+
+function toggleOilField(){
+  const type = document.getElementById('sType').value;
+  const field = document.getElementById('oilTypeField');
+  if(type === 'Servis Berkala (Enjin/Minyak)'){
+    field.classList.remove('hidden');
+  } else {
+    field.classList.add('hidden');
+  }
+}
+
+function openServiceModal(){
+  document.getElementById('sDate').value = new Date().toISOString().slice(0,10);
+  const v = db.vehicles.find(x=>x.id===currentVehicleId);
+  document.getElementById('sMileage').value = v?v.currentMileage:'';
+  document.getElementById('sCost').value='';
+  document.getElementById('sWorkshop').value='';
+  document.getElementById('sNote').value='';
+  document.getElementById('sOilType').value='';
+  toggleOilField();
+
+  const cbField = document.getElementById('checklistTagField');
+  const cbList = document.getElementById('checklistCheckboxes');
+  const checklist = (v && v.checklist) || [];
+  if(checklist.length===0){
+    cbField.classList.add('hidden');
+  } else {
+    cbField.classList.remove('hidden');
+    cbList.innerHTML = checklist.map(item=>`
+      <div class="checkbox-row">
+        <input type="checkbox" id="cb_${item.id}" value="${item.id}">
+        <label for="cb_${item.id}">${item.name} <span class="cb-sub">(${item.action})</span></label>
+      </div>
+    `).join('');
+  }
+  document.getElementById('serviceModalOverlay').classList.add('open');
+}
+
+function saveService(){
+  const v = db.vehicles.find(x=>x.id===currentVehicleId);
+  if(!v) return;
+  const mileage = Number(document.getElementById('sMileage').value)||0;
+  const record = {
+    id: uid(),
+    date: document.getElementById('sDate').value,
+    mileage,
+    type: document.getElementById('sType').value,
+    cost: Number(document.getElementById('sCost').value)||0,
+    workshop: document.getElementById('sWorkshop').value.trim(),
+    oilType: document.getElementById('sOilType').value.trim(),
+    note: document.getElementById('sNote').value.trim()
+  };
+  v.history = v.history||[];
+  v.history.unshift(record);
+  v.history.sort((a,b)=> new Date(b.date)-new Date(a.date));
+  if(mileage > (v.currentMileage||0)) v.currentMileage = mileage;
+
+  const checkedIds = Array.from(document.querySelectorAll('#checklistCheckboxes input:checked')).map(el=>el.value);
+  if(checkedIds.length>0 && v.checklist){
+    v.checklist.forEach(item=>{
+      if(checkedIds.includes(item.id)){
+        item.lastKm = mileage;
+        item.lastDate = record.date;
+      }
+    });
+  }
+
+  save();
+  closeModal('serviceModalOverlay');
+  openDetail(currentVehicleId);
+}
+
+function deleteHistory(hid){
+  const v = db.vehicles.find(x=>x.id===currentVehicleId);
+  if(!v) return;
+  if(!confirm('Padam rekod ini?')) return;
+  v.history = v.history.filter(h=>h.id!==hid);
+  save();
+  openDetail(currentVehicleId);
+}
+
+render();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(e=>console.log('SW failed',e));
+  });
+}
+</script>
+</body>
+</html>
